@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import ttk
-from tkcalendar import DateEntry  # Import the DateEntry widget from tkcalendar
+from tkinter import ttk, messagebox
+from tkcalendar import DateEntry
 from datetime import datetime
 
 class ExpenseTrackerApp:
@@ -19,9 +19,12 @@ class ExpenseTrackerApp:
         input_frame = ttk.LabelFrame(self.root, text="Add Expense")
         input_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Expense amount input
+        # Expense amount input with validation
         ttk.Label(input_frame, text="Expense Amount:").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Entry(input_frame, textvariable=self.expense_amount).grid(row=0, column=1, padx=5, pady=5)
+        self.amount_entry = ttk.Entry(input_frame, textvariable=self.expense_amount)
+        self.amount_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.amount_entry.focus()  # Set focus to the amount entry field
+        self.amount_entry.bind('<FocusOut>', self.validate_amount)
 
         # Currency selection
         ttk.Label(input_frame, text="Currency:").grid(row=1, column=0, padx=5, pady=5)
@@ -70,12 +73,56 @@ class ExpenseTrackerApp:
         date = self.expense_date.get()
         method = self.payment_method.get()
 
-        # Insert expense into table
-        self.expense_table.insert("", "end", values=(amount, currency, category, date, method))
+        # Validate amount and date before adding expense
+        if self.validate_amount(event=None) and self.validate_date(event=None):
+            try:
+                float(amount)
+            except ValueError:
+                messagebox.showerror("Invalid Amount", "Please enter a valid number for the expense amount.")
+                self.amount_entry.focus()
+                return
 
-        # Calculate total expenses
-        total_expenses = sum(float(item[0]) for item in self.expense_table.get_children())
-        self.total_label.config(text=f"Total Expenses: ${total_expenses:.2f}")
+            # Insert expense into table
+            self.expense_table.insert("", "end", values=(amount, currency, category, date, method))
+
+            # Calculate total expenses
+            total_expenses = 0.0
+            for item in self.expense_table.get_children():
+                values = self.expense_table.item(item, 'values')
+                try:
+                    total_expenses += float(values[0])
+                except ValueError:
+                    continue  # Skip non-numeric values
+            self.total_label.config(text=f"Total Expenses: ${total_expenses:.2f}")
+
+            # Clear input fields after adding expense
+            self.clear_input_fields()
+
+    def validate_amount(self, event):
+        try:
+            float(self.expense_amount.get())
+            return True
+        except ValueError:
+            messagebox.showerror("Invalid Amount", "Please enter a valid number for the expense amount.")
+            self.amount_entry.focus()
+            return False
+
+    def validate_date(self, event):
+        try:
+            datetime.strptime(self.expense_date.get(), '%Y-%m-%d')
+            return True
+        except ValueError:
+            messagebox.showerror("Invalid Date", "Please enter a valid date in the format YYYY-MM-DD.")
+            self.date_entry.focus()
+            return False
+
+    def clear_input_fields(self):
+        self.expense_amount.set("")
+        self.expense_currency.set("USD")
+        self.expense_category.set("Life Expenses")
+        self.expense_date.set(datetime.today().strftime('%Y-%m-%d'))
+        self.payment_method.set("Cash")
+        self.amount_entry.focus()
 
 if __name__ == "__main__":
     root = tk.Tk()
