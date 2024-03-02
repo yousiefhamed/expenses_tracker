@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from datetime import datetime
+from currency_converter import CurrencyConverter
 
 class ExpenseTrackerApp:
     def __init__(self, root):
@@ -28,7 +29,7 @@ class ExpenseTrackerApp:
 
         # Currency selection
         ttk.Label(input_frame, text="Currency:").grid(row=1, column=0, padx=5, pady=5)
-        self.currency_combobox = ttk.Combobox(input_frame, textvariable=self.expense_currency, values=["USD", "EUR", "GBP", "JPY"])
+        self.currency_combobox = ttk.Combobox(input_frame, textvariable=self.expense_currency, values=list(CurrencyConverter().currencies))
         self.currency_combobox.grid(row=1, column=1, padx=5, pady=5)
         self.currency_combobox.set("USD")
 
@@ -66,6 +67,22 @@ class ExpenseTrackerApp:
         self.total_label = ttk.Label(self.root, text="Total Expenses: $0")
         self.total_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
 
+        self.converter = CurrencyConverter()
+
+    def calculate_total_expenses(self):
+        total_expenses_usd = 0.0
+        for item in self.expense_table.get_children():
+            values = self.expense_table.item(item, 'values')
+            try:
+                amount = float(values[0])
+                currency = values[1]
+                # Convert amount to USD
+                usd_amount = self.converter.convert(amount, currency, 'USD')
+                total_expenses_usd += usd_amount
+            except ValueError:
+                continue  # Skip non-numeric values
+        return total_expenses_usd
+
     def add_expense(self):
         amount = self.expense_amount.get()
         currency = self.expense_currency.get()
@@ -82,18 +99,12 @@ class ExpenseTrackerApp:
                 self.amount_entry.focus()
                 return
 
-            # Insert expense into table
+            # Insert expense into table without converting currency
             self.expense_table.insert("", "end", values=(amount, currency, category, date, method))
 
-            # Calculate total expenses
-            total_expenses = 0.0
-            for item in self.expense_table.get_children():
-                values = self.expense_table.item(item, 'values')
-                try:
-                    total_expenses += float(values[0])
-                except ValueError:
-                    continue  # Skip non-numeric values
-            self.total_label.config(text=f"Total Expenses: ${total_expenses:.2f}")
+            # Calculate total expenses in USD
+            total_expenses_usd = self.calculate_total_expenses()
+            self.total_label.config(text=f"Total Expenses: ${total_expenses_usd:.2f}")
 
             # Clear input fields after adding expense
             self.clear_input_fields()
