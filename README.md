@@ -2,6 +2,10 @@
 
 The Expense Tracker is a simple Python application that allows users to track their expenses. It provides a graphical user interface (GUI) for entering expenses, categorizing them, and viewing the total expenses in USD.
 
+## Screenshot
+
+<img src="./screenshot.png">
+
 ## Features
 
 - Add expenses with details such as amount, currency, category, date, and payment method.
